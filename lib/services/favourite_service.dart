@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:englify_app/app/app.locator.dart';
+import 'package:englify_app/services/analytics_service.dart';
 import 'package:englify_app/services/auth_service.dart';
 import 'package:englify_app/services/firestore_keys.dart';
 
 class FavouriteService {
   final _firestore = FirebaseFirestore.instance;
   final _authservice = locator<AuthService>();
+  AnalyticsService get _analytics => locator<AnalyticsService>();
 
   Future<bool> togglefavlesson({
     required String lessontitle,
@@ -28,6 +30,7 @@ class FavouriteService {
 
       if (doc.exists) {
         await ref.delete(); // ← await add kiya
+        await _analytics.logFavourite(added: false, lessonId: lessonid);
         return false;
       } else {
         await ref.set({
@@ -38,6 +41,7 @@ class FavouriteService {
           'imageUrl': lessonimageurl,
           'addedAt': FieldValue.serverTimestamp(),
         });
+        await _analytics.logFavourite(added: true, lessonId: lessonid);
         return true;
       }
     } catch (e) {

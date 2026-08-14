@@ -47,3 +47,5 @@ app.*.map.json
 
 # Local documentation/reports
 *.md
+*.apk
+*.apk

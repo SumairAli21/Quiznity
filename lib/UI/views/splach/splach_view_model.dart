@@ -2,8 +2,9 @@ import 'package:englify_app/app/app.locator.dart';
 import 'package:englify_app/app/app.router.dart';
 import 'package:englify_app/services/auth_service.dart';
 import 'package:englify_app/services/local_storage_service.dart';
-import 'package:englify_app/services/classroom_service.dart';
 import 'package:englify_app/services/notification_service.dart';
+import 'package:englify_app/services/user_service.dart';
+import 'package:englify_app/utils/student_routing.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
@@ -18,11 +19,11 @@ class SplachViewModel extends BaseViewModel {
  final _authservice=
  locator<AuthService>();
 
- final _classroomservice=
- locator<classroomservice>();
-
  final _notificationservice=
  locator<NotificationService>();
+
+ final _userservice=
+ locator<UserService>();
 
 
  Future<void> runsetuplogic() async {
@@ -47,11 +48,11 @@ class SplachViewModel extends BaseViewModel {
 
 
 
- final role=
+ final cachedrole=
  await _localstorage
  .getuserrole();
 
- if(role==null){
+ if(cachedrole==null){
 
  _navigationservice
  .replaceWithRoleSelection();
@@ -77,6 +78,45 @@ class SplachViewModel extends BaseViewModel {
 
 
 
+ // Firestore is the source of truth for the role. Re-read it for the signed-in
+ // user so a stale local cache can never open the wrong flow. Fall back to the
+ // cached role only when the user or the network read is unavailable (offline).
+ final user=
+ _authservice.currentuser;
+
+ String role=cachedrole;
+
+ if(user!=null){
+
+ try{
+
+ final firestorerole=
+ await _userservice
+ .getUserrole(user.uid);
+
+ if(firestorerole!=null){
+
+ role=firestorerole;
+
+ await _localstorage
+ .saveuserrole(firestorerole);
+
+ }
+
+ }
+
+ catch(e){
+
+ print(
+ "Role lookup failed, using cached role: $e"
+ );
+
+ }
+
+ }
+
+
+
  // TEACHER FLOW
  if(role=="teacher"){
 
@@ -93,54 +133,36 @@ class SplachViewModel extends BaseViewModel {
 
 
  // STUDENT FLOW
- final user=
- _authservice.currentuser;
-
 
  if(user!=null){
 
  try{
 
- final hasClasses=
- await _classroomservice
- .hasStudentJoinedAnyClass(
+ // Enrolled -> home, no saved name -> personalization, otherwise the
+ // join-by-code screen. Shared with login / Google / Apple sign-in so the
+ // one-time personalization rule cannot drift between entry points.
+ // See lib/utils/student_routing.dart.
+ final destination=
+ await routeSignedInStudent(
  user.uid
  );
 
-
- if(hasClasses){
-
- await _localstorage
- .setclassroomjointrue();
-
- _navigationservice
- .replaceWithBottomNaviView();
+ if(destination==
+ StudentDestination.home){
 
  await _notificationservice
  .handleLaunchDeepLink();
 
- return;
-
  }
 
- else{
-
- await _localstorage
- .clearclassroomjoin();
-
- _navigationservice
- .replaceWithPersonalizationView();
-
  return;
-
- }
 
  }
 
  catch(e){
 
  print(
- "Error checking classes: $e"
+ "Error routing student: $e"
  );
 
  _navigationservice

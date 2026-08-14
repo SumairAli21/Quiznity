@@ -109,6 +109,11 @@ class ClassroomdetailView extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(28),
                                   borderSide: BorderSide.none,
                                 ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFF2F6BFF), width: 1.6),
+                                ),
                                 contentPadding:
                                     const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -209,10 +214,11 @@ class ClassroomdetailView extends StatelessWidget {
                 ),
               ),
 
-              // FAB
+              // FAB — sits outside the content SafeArea, so add the system
+              // navigation inset to keep it clear of the OS nav controls.
               Positioned(
                 right: 24,
-                bottom: isLandscape ? 16 : 30,
+                bottom: (isLandscape ? 16 : 30) + context.bottomSafeInset,
                 child: GestureDetector(
                   onTap: model.gotocreatelesson,
                   child: Container(

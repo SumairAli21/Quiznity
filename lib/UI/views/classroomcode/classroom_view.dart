@@ -1,4 +1,5 @@
 import 'package:englify_app/UI/views/classroomcode/classroom_view_model.dart';
+import 'package:englify_app/UI/widgets/app_logo.dart';
 import 'package:englify_app/UI/widgets/reusable_elevated_blue_button.dart';
 import 'package:englify_app/utils/responsive.dart';
 import 'package:flutter/material.dart';
@@ -31,12 +32,8 @@ class ClassroomcodeView extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Flexible(
-                          child: Image.asset(
-                            'assets/images/applogo_blue.png',
-                            height: context.rs(isLandscape ? 80 : 70),
-                            fit: BoxFit.contain,
-                          ),
+                        const Flexible(
+                          child: AppLogo.header(variant: AppLogoVariant.blue),
                         ),
                         SizedBox(width: context.rs(16)),
                         ElevatedButton(

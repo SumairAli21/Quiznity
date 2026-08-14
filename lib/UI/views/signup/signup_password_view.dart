@@ -87,7 +87,11 @@ class SignupPasswordView extends StatelessWidget {
                       txt: "At least 1 number",
                     ),
                     SizedBox(height: context.rs(25)),
-                    AppButton(title: "Create account", onTap: model.oncreate,),
+                    AppButton(
+                      title: "Create account",
+                      isLoading: model.isBusy,
+                      onTap: () => model.oncreate(context),
+                    ),
                     SizedBox(height: context.rs(17)),
                     Column(
                       children: [

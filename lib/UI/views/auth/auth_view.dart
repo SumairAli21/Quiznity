@@ -1,4 +1,5 @@
 import 'package:englify_app/UI/views/auth/auth_view_model.dart';
+import 'package:englify_app/UI/widgets/app_logo.dart';
 import 'package:englify_app/utils/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -36,12 +37,22 @@ class AuthView extends StatelessWidget {
                 ),
               ),
 
-              // Logo
-              Positioned(
-                top: context.heightPercent(6),
-                left: 5,
-                child: Image.asset("assets/images/applogo.png",
-                    height: context.rs(65)),
+              // Logo — kept inside SafeArea so a notch or landscape cutout can
+              // never clip it, and aligned to the page gutter rather than a
+              // hardcoded 5px offset.
+              Positioned.fill(
+                child: SafeArea(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: context.hPad,
+                        top: context.rs(12),
+                      ),
+                      child: const AppLogo.header(),
+                    ),
+                  ),
+                ),
               ),
 
               // Buttons Section

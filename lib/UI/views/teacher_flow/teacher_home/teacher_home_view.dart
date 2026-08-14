@@ -59,6 +59,10 @@ class TeacherHomeView extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ),
+                // Subtle overlay to keep header/search text readable.
+                Positioned.fill(
+                  child: Container(color: Colors.black.withOpacity(0.25)),
+                ),
 
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,6 +129,11 @@ class TeacherHomeView extends StatelessWidget {
                                                 BorderRadius.circular(28),
                                             borderSide: BorderSide.none,
                                           ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(28),
+                                            borderSide: const BorderSide(
+                                                color: Color(0xFF2F6BFF), width: 1.6),
+                                          ),
                                           contentPadding:
                                               const EdgeInsets.symmetric(
                                             horizontal: 12,
@@ -133,20 +142,6 @@ class TeacherHomeView extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding:
-                                      EdgeInsets.all(isTablet ? 12 : 8),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.notifications,
-                                    color: const Color(0xFF2F6BFF),
-                                    size: isTablet ? 24 : 20,
                                   ),
                                 ),
                               ],
@@ -181,19 +176,6 @@ class TeacherHomeView extends StatelessWidget {
                                         ),
                                       ],
                                     ),
-                                    Container(
-                                      padding: EdgeInsets.all(
-                                          isTablet ? 12 : 10),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.notifications,
-                                        color: const Color(0xFF2F6BFF),
-                                        size: isTablet ? 26 : 22,
-                                      ),
-                                    ),
                                   ],
                                 ),
                                 SizedBox(height: isSmall ? 10 : 16),
@@ -224,6 +206,11 @@ class TeacherHomeView extends StatelessWidget {
                                           borderRadius:
                                               BorderRadius.circular(28),
                                           borderSide: BorderSide.none,
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(28),
+                                          borderSide: const BorderSide(
+                                              color: Color(0xFF2F6BFF), width: 1.6),
                                         ),
                                         contentPadding:
                                             const EdgeInsets.symmetric(

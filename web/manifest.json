@@ -1,11 +1,11 @@
 {
-    "name": "englify_app",
-    "short_name": "englify_app",
+    "name": "Quiznity",
+    "short_name": "Quiznity",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Quiznity — language learning app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

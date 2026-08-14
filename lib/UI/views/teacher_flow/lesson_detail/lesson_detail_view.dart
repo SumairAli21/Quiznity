@@ -31,7 +31,7 @@ class LessonDetailView extends StatelessWidget {
               ),
               Positioned.fill(
                 child: Container(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.black.withOpacity(0.25),
                 ),
               ),
               SafeArea(

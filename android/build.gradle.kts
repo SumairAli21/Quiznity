@@ -4,6 +4,9 @@ plugins {
   // Add the dependency for the Google services Gradle plugin
   id("com.google.gms.google-services") version "4.4.4" apply false
 
+  // Firebase Crashlytics Gradle plugin (uploads mapping/symbol files).
+  id("com.google.firebase.crashlytics") version "3.0.3" apply false
+
 }
 
 

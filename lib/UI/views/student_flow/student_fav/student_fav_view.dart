@@ -32,7 +32,6 @@ class StudentFavView extends StatelessWidget {
                       padding: EdgeInsets.symmetric(
                           horizontal: context.rs(20), vertical: context.rs(14)),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'Favorite Topics',
@@ -41,18 +40,6 @@ class StudentFavView extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                               fontFamily: 'heading',
-                            ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.all(context.rs(10)),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.notifications,
-                              color: Color(0xFF2F6BFF),
-
                             ),
                           ),
                         ],
@@ -85,6 +72,14 @@ class StudentFavView extends StatelessWidget {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(28),
                               borderSide: BorderSide.none,
+                            ),
+                            // BorderSide.none opts a field out of the themed
+                            // focus ring entirely, so it is set explicitly here
+                            // (at this field's own radius) to stay consistent.
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(28),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF2F6BFF), width: 1.6),
                             ),
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: context.rs(16), vertical: context.rs(14)),
@@ -140,7 +135,7 @@ class StudentFavView extends StatelessWidget {
                                     return _FavCard(
                                       fav: fav,
                                       onTap: () =>
-                                          model.onFavTap(fav),
+                                          model.onFavTap(context, fav),
                                       index: index,
                                     );
                                   },

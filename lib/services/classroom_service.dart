@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:englify_app/app/app.locator.dart';
 import 'package:englify_app/models/classdata_model.dart';
+import 'package:englify_app/services/analytics_service.dart';
 
 class classroomservice {
   final _classes = FirebaseFirestore.instance.collection("classes");
+  AnalyticsService get _analytics => locator<AnalyticsService>();
 
   //========================
   // Generate Class Code
@@ -42,6 +45,13 @@ class classroomservice {
     if (maxstudents < 1 || maxstudents > 59) {
       throw Exception("Students must be between 1 and 59");
     }
+    // Validation before write — reject empty class name / missing teacher.
+    if (classname.trim().isEmpty) {
+      throw Exception("Class name is required");
+    }
+    if (teacher_id.trim().isEmpty) {
+      throw Exception("Missing teacher id");
+    }
 
     final code = _generateclasscode();
 
@@ -72,6 +82,8 @@ class classroomservice {
     });
 
     print("Class created successfully");
+
+    await _analytics.logClassCreate();
 
     return code;
   }
@@ -126,6 +138,8 @@ class classroomservice {
       await batch.commit();
 
       print("✅ Student joined class");
+
+      await _analytics.logClassJoin();
 
       return null;
     } catch (e) {

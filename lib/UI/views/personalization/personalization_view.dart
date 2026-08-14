@@ -1,4 +1,5 @@
 import 'package:englify_app/UI/views/personalization/personalization_view_model.dart';
+import 'package:englify_app/UI/widgets/app_logo.dart';
 import 'package:englify_app/UI/widgets/reusable_elevated_blue_button.dart';
 import 'package:englify_app/utils/responsive.dart';
 import 'package:flutter/material.dart';
@@ -29,11 +30,7 @@ class PersonalizationView extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Image.asset(
-                      "assets/images/applogo_blue.png",
-                      height: context.rs(isLandscape ? 80 : 70),
-                      fit: BoxFit.contain,
-                    ),
+                    const AppLogo(variant: AppLogoVariant.blue),
                     SizedBox(height: context.rs(isLandscape ? 16 : 24)),
                     Text(
                       "What's your name?",

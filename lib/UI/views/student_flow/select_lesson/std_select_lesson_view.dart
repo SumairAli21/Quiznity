@@ -1,3 +1,4 @@
+import 'package:englify_app/UI/widgets/app_logo.dart';
 import 'package:englify_app/UI/views/student_flow/select_lesson/std_select_lesson_viewmodel.dart';
 import 'package:englify_app/UI/widgets/animated_lessoncard.dart';
 import 'package:englify_app/models/lesson_data_model.dart';
@@ -54,13 +55,7 @@ class StdSelectLessonView extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible(
-                            child: Image.asset(
-                              'assets/images/applogo.png',
-                              height: islandscape ? context.rs(65) : context.rs(60),
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                          const Flexible(child: AppLogo.header()),
                           Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: context.rs(12),

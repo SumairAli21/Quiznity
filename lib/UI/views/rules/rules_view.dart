@@ -32,8 +32,8 @@ class RulesView extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.grey.withOpacity(0.1),
-                      Colors.grey.withOpacity(0.1),
+                      Colors.black.withOpacity(0.25),
+                      Colors.black.withOpacity(0.25),
                     ],
                   ),
                 ),

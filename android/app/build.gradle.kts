@@ -7,6 +7,9 @@ plugins {
 
     // 🔥 Firebase Google Services plugin
     id("com.google.gms.google-services")
+
+    // 🔥 Firebase Crashlytics plugin
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -58,6 +61,10 @@ dependencies {
 
     // 🔔 Firebase Cloud Messaging (push notifications)
     implementation("com.google.firebase:firebase-messaging")
+
+    // 💥 Firebase Crashlytics + 📊 Analytics (BOM-managed versions)
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
 
     // Desugaring runtime for flutter_local_notifications.
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")

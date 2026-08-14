@@ -122,6 +122,11 @@ class StudentClassroomDetaiView extends StatelessWidget {
                                         BorderRadius.circular(28),
                                     borderSide: BorderSide.none,
                                   ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                    borderSide: const BorderSide(
+                                        color: Color(0xFF2F6BFF), width: 1.6),
+                                  ),
                                   contentPadding:
                                       const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 0),

@@ -51,32 +51,33 @@ class OnbordingSlides extends StatelessWidget {
               height: size.height * 0.64,
               fit: BoxFit.cover,
             ),
-            // Skip Button
-            Positioned(
-              top: context.rs(16),
-              right: context.rs(16),
-              child: GestureDetector(
-                onTap: onskip,
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    vertical: context.rs(6),
-                    horizontal: context.rs(14),
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    "Skip",
-                    style: TextStyle(
-                      fontSize: context.rf(14),
-                      color: Colors.white,
-                      fontFamily: "button",
+            // Skip Button (hidden on the last onboarding screen)
+            if (currentIndex != totalPages - 1)
+              Positioned(
+                top: context.rs(16),
+                right: context.rs(16),
+                child: GestureDetector(
+                  onTap: onskip,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: context.rs(6),
+                      horizontal: context.rs(14),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "Skip",
+                      style: TextStyle(
+                        fontSize: context.rf(14),
+                        color: Colors.white,
+                        fontFamily: "button",
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
 
@@ -111,6 +112,10 @@ class OnbordingSlides extends StatelessWidget {
                   ),
                 ),
 
+                // Guaranteed minimum spacing between body text and the CTA
+                // cluster so they never crowd on short screens, while the
+                // Spacer still anchors the button toward the bottom.
+                SizedBox(height: context.rs(32)),
                 Spacer(),
 
                 // ✅ Page Indicators
@@ -147,32 +152,33 @@ class OnbordingSlides extends StatelessWidget {
                 height: double.infinity,
                 fit: BoxFit.cover,
               ),
-              // Skip Button
-              Positioned(
-                top: context.rs(16),
-                right: context.rs(16),
-                child: GestureDetector(
-                  onTap: onskip,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      vertical: context.rs(6),
-                      horizontal: context.rs(14),
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "Skip",
-                      style: TextStyle(
-                        fontSize: context.rf(14),
-                        color: Colors.white,
-                        fontFamily: "button",
+              // Skip Button (hidden on the last onboarding screen)
+              if (currentIndex != totalPages - 1)
+                Positioned(
+                  top: context.rs(16),
+                  right: context.rs(16),
+                  child: GestureDetector(
+                    onTap: onskip,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        vertical: context.rs(6),
+                        horizontal: context.rs(14),
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "Skip",
+                        style: TextStyle(
+                          fontSize: context.rf(14),
+                          color: Colors.white,
+                          fontFamily: "button",
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

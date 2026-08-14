@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:englify_app/app/app.locator.dart';
+import 'package:englify_app/services/analytics_service.dart';
 import 'package:englify_app/services/auth_service.dart';
 import 'package:englify_app/services/firestore_keys.dart';
 
 class PointsService {
   final _firestore = FirebaseFirestore.instance;
   final _authservice = locator<AuthService>();
+  AnalyticsService get _analytics => locator<AnalyticsService>();
 
   Future<int> gettotalcoin() async {
     try {
@@ -131,6 +133,8 @@ class PointsService {
           .doc(studentId)
           .set({'totalCoins': FieldValue.increment(score)},
               SetOptions(merge: true));
+
+      await _analytics.logQuizSubmit(score: score, total: totalPoints);
 
       print('✅ Quiz saved — student: $studentId | score: $score/$totalPoints');
     } catch (e) {

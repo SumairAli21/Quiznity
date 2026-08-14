@@ -1,3 +1,4 @@
+import 'package:englify_app/UI/widgets/app_logo.dart';
 import 'package:englify_app/UI/views/teacher_flow/classroom_create/classroom_create_viewmodel.dart';
 import 'package:englify_app/UI/widgets/classroomcreate_dialog.dart';
 import 'package:englify_app/UI/widgets/reusable_elevated_blue_button.dart';
@@ -46,10 +47,10 @@ class ClassroomCreateView extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset(
-                          'assets/images/applogo_blue.png',
-                          height: context.rs(150),
-                          width: context.rs(200),
+                        // Flexible so the wordmark yields to the Back button
+                        // instead of overflowing the row on narrow screens.
+                        const Flexible(
+                          child: AppLogo.header(variant: AppLogoVariant.blue),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(

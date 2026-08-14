@@ -1,17 +1,65 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:crypto/crypto.dart';
 
+/// Cloudinary upload service.
+///
+/// SECURITY: this client no longer holds the Cloudinary `api_key` / `api_secret`.
+/// Uploads use an **unsigned upload preset**, so no signing secret ever ships
+/// inside the app. The cloud name and preset name below are not secrets.
+///
+/// Firebase Console / Cloudinary setup required (see PRODUCTION_HARDENING_REPORT):
+///   1. Cloudinary dashboard → Settings → Upload → add an *unsigned* upload
+///      preset named `englify_unsigned` (or override via --dart-define).
+///   2. On that preset, allow the `public_id` and `folder` params and restrict
+///      the allowed formats / max file size as desired.
+///
+/// Both values can be overridden at build time without code changes:
+///   flutter build apk --dart-define=CLOUDINARY_CLOUD_NAME=xxx \
+///                     --dart-define=CLOUDINARY_UPLOAD_PRESET=yyy
 class CloudinaryService {
-  // ✅ Your Cloudinary credentials
-  static const String cloudName = 'dkswfrmz0';
-  static const String apiKey = '122888724262782';
-  static const String apiSecret = '9WgILzL2V5AkDX2QWtpABBK-Qic';
+  // Non-secret configuration. Overridable via --dart-define for other tenants.
+  static const String cloudName =
+      String.fromEnvironment('CLOUDINARY_CLOUD_NAME', defaultValue: 'dkswfrmz0');
+  static const String uploadPreset = String.fromEnvironment(
+    'CLOUDINARY_UPLOAD_PRESET',
+    defaultValue: 'englify_unsigned',
+  );
+
   static const String uploadUrl =
       'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
   static const String rawUploadUrl =
       'https://api.cloudinary.com/v1_1/$cloudName/raw/upload';
+
+  /// Shared unsigned upload. Returns the `secure_url` on success, throws on
+  /// failure. `endpoint` selects the image vs raw endpoint.
+  Future<String> _unsignedUpload({
+    required String endpoint,
+    required List<int> bytes,
+    required String filename,
+    required String folder,
+    required String publicId,
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse(endpoint));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: filename),
+    );
+    // Unsigned upload — only the preset, no api_key / signature.
+    request.fields['upload_preset'] = uploadPreset;
+    request.fields['folder'] = folder;
+    request.fields['public_id'] = publicId;
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['secure_url'] as String;
+    }
+    throw Exception(
+      "Upload failed with status ${response.statusCode}: ${response.body}",
+    );
+  }
 
   Future<String> uploadClassroomImage({
     required File imageFile,
@@ -21,7 +69,6 @@ class CloudinaryService {
       print("\n📤 ===== CLOUDINARY UPLOAD STARTED =====");
       print("📂 File path: ${imageFile.path}");
 
-      // Check file exists
       if (!await imageFile.exists()) {
         throw Exception("Image file not found at: ${imageFile.path}");
       }
@@ -29,69 +76,19 @@ class CloudinaryService {
       final fileSize = await imageFile.length();
       print("📊 File size: ${(fileSize / 1024).toStringAsFixed(2)} KB");
 
-      // Read file as bytes
       final bytes = await imageFile.readAsBytes();
-
-      // Generate timestamp
-      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-          .toString();
-
-      // Prepare upload parameters
-      final folder = 'englify_classrooms';
-      final publicId = 'class_$classId';
-
-      // Create signature string
-      final paramsToSign =
-          'folder=$folder&public_id=$publicId&timestamp=$timestamp';
-      final stringToSign = '$paramsToSign$apiSecret';
-
-      // Generate SHA-1 signature
-      final signatureBytes = utf8.encode(stringToSign);
-      final digest = sha1.convert(signatureBytes);
-      final signature = digest.toString();
-
-      print("🔐 Signature generated");
-      print("⏳ Uploading...");
-
-      // Create multipart request
-      final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
-
-      // Add file
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'classroom_$classId.jpg',
-        ),
+      final imageUrl = await _unsignedUpload(
+        endpoint: uploadUrl,
+        bytes: bytes,
+        filename: 'classroom_$classId.jpg',
+        folder: 'englify_classrooms',
+        publicId: 'class_$classId',
       );
 
-      // Add fields
-      request.fields['api_key'] = apiKey;
-      request.fields['timestamp'] = timestamp;
-      request.fields['signature'] = signature;
-      request.fields['folder'] = folder;
-      request.fields['public_id'] = publicId;
-
-      // Send request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      print("📡 Response status: ${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final imageUrl = data['secure_url'] as String;
-
-        print("✅ Upload successful!");
-        print("🔗 URL: $imageUrl");
-        print("===== UPLOAD COMPLETED =====\n");
-
-        return imageUrl;
-      } else {
-        print("❌ Upload failed!");
-        print("Response: ${response.body}");
-        throw Exception("Upload failed with status ${response.statusCode}");
-      }
+      print("✅ Upload successful!");
+      print("🔗 URL: $imageUrl");
+      print("===== UPLOAD COMPLETED =====\n");
+      return imageUrl;
     } catch (e) {
       print("❌ Upload error: $e");
       print("===== UPLOAD FAILED =====\n");
@@ -100,13 +97,11 @@ class CloudinaryService {
   }
 
   Future<void> deleteImage(String imageUrl) async {
-    try {
-      print("🗑️ Image deletion requested: $imageUrl");
-      // Optional: Implement deletion if needed
-      print("✅ Deletion logged");
-    } catch (e) {
-      print("❌ Delete error: $e");
-    }
+    // NOTE: destructive Cloudinary deletes require the api_secret, which has
+    // intentionally been removed from the client. Deletion must be performed
+    // server-side (a Cloud Function) — see PRODUCTION_HARDENING_REPORT. This
+    // call is a no-op so callers don't break.
+    print("🗑️ Image deletion requested (server-side only): $imageUrl");
   }
 
   Future<String> uploadLessonImage({
@@ -121,46 +116,17 @@ class CloudinaryService {
       }
 
       final bytes = await imageFile.readAsBytes();
-      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-          .toString();
-
-      const folder = 'englify_lessons';
-      final publicId = 'lesson_img_$lessonId';
-
-      final paramsToSign =
-          'folder=$folder&public_id=$publicId&timestamp=$timestamp';
-      final stringToSign = '$paramsToSign$apiSecret';
-      final digest = sha1.convert(utf8.encode(stringToSign));
-      final signature = digest.toString();
-
-      final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'lesson_img_$lessonId.jpg',
-        ),
+      final imageUrl = await _unsignedUpload(
+        endpoint: uploadUrl,
+        bytes: bytes,
+        filename: 'lesson_img_$lessonId.jpg',
+        folder: 'englify_lessons',
+        publicId: 'lesson_img_$lessonId',
       );
-      request.fields['api_key'] = apiKey;
-      request.fields['timestamp'] = timestamp;
-      request.fields['signature'] = signature;
-      request.fields['folder'] = folder;
-      request.fields['public_id'] = publicId;
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final imageUrl = data['secure_url'] as String;
-        print("✅ Lesson image uploaded: $imageUrl");
-        print("===== LESSON IMAGE UPLOAD COMPLETED =====\n");
-        return imageUrl;
-      } else {
-        throw Exception(
-          "Upload failed with status ${response.statusCode}: ${response.body}",
-        );
-      }
+      print("✅ Lesson image uploaded: $imageUrl");
+      print("===== LESSON IMAGE UPLOAD COMPLETED =====\n");
+      return imageUrl;
     } catch (e) {
       print("❌ Lesson image upload error: $e");
       throw Exception("Failed to upload lesson image: $e");
@@ -180,45 +146,16 @@ class CloudinaryService {
       }
 
       final bytes = await imageFile.readAsBytes();
-      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-          .toString();
-
-      const folder = 'user/userprofile/profileimage';
-      final publicId = 'profile_$userId';
-
-      final paramsToSign =
-          'folder=$folder&public_id=$publicId&timestamp=$timestamp';
-      final stringToSign = '$paramsToSign$apiSecret';
-      final digest = sha1.convert(utf8.encode(stringToSign));
-      final signature = digest.toString();
-
-      final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'profile_$userId.jpg',
-        ),
+      final imageUrl = await _unsignedUpload(
+        endpoint: uploadUrl,
+        bytes: bytes,
+        filename: 'profile_$userId.jpg',
+        folder: 'user/userprofile/profileimage',
+        publicId: 'profile_$userId',
       );
-      request.fields['api_key'] = apiKey;
-      request.fields['timestamp'] = timestamp;
-      request.fields['signature'] = signature;
-      request.fields['folder'] = folder;
-      request.fields['public_id'] = publicId;
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final imageUrl = data['secure_url'] as String;
-        print("✅ Profile image uploaded: $imageUrl");
-        return imageUrl;
-      } else {
-        throw Exception(
-          "Upload failed: ${response.statusCode}: ${response.body}",
-        );
-      }
+      print("✅ Profile image uploaded: $imageUrl");
+      return imageUrl;
     } catch (e) {
       print("❌ Profile image upload error: $e");
       throw Exception("Failed to upload profile image: $e");
@@ -226,7 +163,7 @@ class CloudinaryService {
   }
 
   // ─────────────────────────────────────────
-  // 2️⃣  Lesson CONTENT FILE upload (PDF, doc, etc.)
+  // Lesson CONTENT FILE upload (PDF, doc, etc.)
   // ─────────────────────────────────────────
   Future<String> uploadLessonContent({
     required File contentFile,
@@ -241,13 +178,8 @@ class CloudinaryService {
       }
 
       final bytes = await contentFile.readAsBytes();
-      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-          .toString();
 
-      const folder = 'englify_lessons_content';
-      final publicId = 'lesson_content_$lessonId';
-
-      // Use raw upload for PDFs/docs, image upload for images
+      // Use raw upload for PDFs/docs, image upload for images.
       final isImage = [
         'jpg',
         'jpeg',
@@ -257,40 +189,17 @@ class CloudinaryService {
       ].contains(fileExtension.toLowerCase());
       final endpoint = isImage ? uploadUrl : rawUploadUrl;
 
-      final paramsToSign =
-          'folder=$folder&public_id=$publicId&timestamp=$timestamp';
-      final stringToSign = '$paramsToSign$apiSecret';
-      final digest = sha1.convert(utf8.encode(stringToSign));
-      final signature = digest.toString();
-
-      final request = http.MultipartRequest('POST', Uri.parse(endpoint));
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: 'lesson_content_$lessonId.$fileExtension',
-        ),
+      final contentUrl = await _unsignedUpload(
+        endpoint: endpoint,
+        bytes: bytes,
+        filename: 'lesson_content_$lessonId.$fileExtension',
+        folder: 'englify_lessons_content',
+        publicId: 'lesson_content_$lessonId',
       );
-      request.fields['api_key'] = apiKey;
-      request.fields['timestamp'] = timestamp;
-      request.fields['signature'] = signature;
-      request.fields['folder'] = folder;
-      request.fields['public_id'] = publicId;
 
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final contentUrl = data['secure_url'] as String;
-        print("✅ Lesson content uploaded: $contentUrl");
-        print("===== LESSON CONTENT UPLOAD COMPLETED =====\n");
-        return contentUrl;
-      } else {
-        throw Exception(
-          "Upload failed with status ${response.statusCode}: ${response.body}",
-        );
-      }
+      print("✅ Lesson content uploaded: $contentUrl");
+      print("===== LESSON CONTENT UPLOAD COMPLETED =====\n");
+      return contentUrl;
     } catch (e) {
       print("❌ Lesson content upload error: $e");
       throw Exception("Failed to upload lesson content: $e");

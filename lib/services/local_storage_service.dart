@@ -50,6 +50,43 @@ class LocalStorageService {
     await pref.setBool(_isloginKey, false);
   }
 
+  // account identity — the uid that the cached user data below belongs to
+  static const _lastuidkey = "last_uid";
+
+  /// Drops per-account cached data when the signed-in account changes.
+  ///
+  /// Must run on every successful sign-in. Without it, a previous account's
+  /// cached name/classroom state leaks into the next account when the user
+  /// switches without logging out first.
+  ///
+  /// The role is deliberately NOT cleared: on first sign-up it is chosen
+  /// before auth happens, and for an existing user it is overwritten from
+  /// Firestore straight after sign-in.
+  Future<void> syncsession(String uid) async {
+    final pref = await SharedPreferences.getInstance();
+    if (pref.getString(_lastuidkey) != uid) {
+      await pref.remove(_usernamekey);
+      await pref.remove(classroomKey);
+      await pref.remove(_notificationsenabledkey);
+    }
+    await pref.setString(_lastuidkey, uid);
+  }
+
+  // push notifications on/off (profile screen toggle)
+  static const _notificationsenabledkey = "notifications_enabled";
+
+  /// Defaults to true — a fresh install receives notifications until the user
+  /// opts out.
+  Future<bool> getnotificationsenabled() async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getBool(_notificationsenabledkey) ?? true;
+  }
+
+  Future<void> savenotificationsenabled(bool enabled) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setBool(_notificationsenabledkey, enabled);
+  }
+
   // user personalization
   static const _usernamekey = "user_name";
 

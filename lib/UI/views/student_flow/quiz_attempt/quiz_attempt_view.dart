@@ -119,9 +119,10 @@ class QuizAttemptView extends StatelessWidget {
                                     ),
                                     const Spacer(),
 
-                                    // Info button
+                                    // Info button — quiz rules
                                     GestureDetector(
-                                      onTap: () {}, // bad mein implement
+                                      onTap: () =>
+                                          _showRulesDialog(context, model),
                                       child: Container(
                                         padding: EdgeInsets.all(context.rs(8)),
                                         decoration: const BoxDecoration(
@@ -385,6 +386,110 @@ child: Text(
           ),
         );
       },
+    );
+  }
+
+  /// Explains how scoring and the timer work. Nothing else in the flow tells
+  /// the student that a timeout scores zero, so this is the only place it is
+  /// stated.
+  void _showRulesDialog(BuildContext context, QuizAttemptViewmodel model) {
+    final perQuestion = model.pointsPerQuestion;
+    final hasTimer =
+        model.questions.any((q) => q.timerEnabled);
+
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Color(0xFF2F6BFF)),
+            const SizedBox(width: 8),
+            const Text(
+              'How this quiz works',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _RuleLine(
+              icon: Icons.emoji_events_outlined,
+              text: 'This quiz is worth ${model.totalPoints} points across '
+                  '${model.questions.length} questions — '
+                  '$perQuestion points each.',
+            ),
+            const _RuleLine(
+              icon: Icons.check_circle_outline,
+              text: 'A correct answer earns the full points for that '
+                  'question. A wrong answer earns 0.',
+            ),
+            if (hasTimer)
+              const _RuleLine(
+                icon: Icons.timer_outlined,
+                text: 'Timed questions score 0 if the timer runs out, so '
+                    'answer before it empties.',
+              ),
+            const _RuleLine(
+              icon: Icons.touch_app_outlined,
+              text: 'Pick an option and press Continue to check it, then '
+                  'press again to move on.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Got it',
+              style: TextStyle(
+                color: Color(0xFF2F6BFF),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _RuleLine({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF2F6BFF)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13.5,
+                height: 1.4,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

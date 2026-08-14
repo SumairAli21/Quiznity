@@ -1,0 +1,112 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────
+// RECOMMENDED Firestore security rules for Englify — REVIEW BEFORE DEPLOYING.
+//
+// These are NOT wired into firebase.json and are NOT deployed automatically.
+// To deploy after review:
+//   1. add a "firestore": { "rules": "firestore.rules" } block to firebase.json
+//   2. run `firebase deploy --only firestore:rules`
+//   3. test every flow in the Rules Playground / emulator first.
+//
+// Model recap (single-tenant):
+//   users/{uid}                              owner profile (+ role)
+//   users/{uid}/fcmTokens|favourites|quizResults  owner-only subcollections
+//   classes/{classId}                        owned by teacherId
+//   classes/{classId}/members/{userId}       enrollment
+//   classes/{classId}/lessons/{lessonId}/quizzes/{quizId}
+//   lessons/{lessonId}                       owned by teacherId
+//   lessons/{lessonId}/quizResults/{studentId}
+//
+// Design tradeoff: the teacher dashboard reads other users' profile docs
+// (name / image) and quiz results, so authenticated READ is allowed broadly,
+// while WRITES are locked to the owner. Tightening reads further would require
+// denormalising names onto the quizResults docs (already partly done) and is
+// noted as future work in PRODUCTION_HARDENING_REPORT.
+// ─────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ── Users ────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      // Any signed-in user may read a profile (needed for teacher dashboards).
+      allow read: if isSignedIn();
+      // Only the owner may create/modify their own profile.
+      allow create, update, delete: if isOwner(uid);
+
+      // Owner-only subcollections.
+      match /fcmTokens/{tokenId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /favourites/{lessonId} {
+        allow read, write: if isOwner(uid);
+      }
+      match /quizResults/{lessonId} {
+        // Owner writes; signed-in teachers may read (legacy dashboard path).
+        allow read: if isSignedIn();
+        allow write: if isOwner(uid);
+      }
+    }
+
+    // ── Classes ──────────────────────────────────────────────────────────
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      // A teacher creates a class they own.
+      allow create: if isSignedIn()
+                    && request.resource.data.teacherId == request.auth.uid;
+      // The owning teacher may edit/delete. A student joining only changes
+      // currentStudentCount — allow that single-field bump.
+      allow update: if isSignedIn() && (
+                      resource.data.teacherId == request.auth.uid ||
+                      request.resource.data.diff(resource.data)
+                        .affectedKeys().hasOnly(['currentStudentCount'])
+                    );
+      allow delete: if isSignedIn()
+                    && resource.data.teacherId == request.auth.uid;
+
+      // Enrollment: a user manages their own membership doc; teacher manages all.
+      match /members/{userId} {
+        allow read: if isSignedIn();
+        allow create, delete: if isOwner(userId)
+                    || get(/databases/$(database)/documents/classes/$(classId))
+                         .data.teacherId == request.auth.uid;
+        allow update: if isOwner(userId)
+                    || get(/databases/$(database)/documents/classes/$(classId))
+                         .data.teacherId == request.auth.uid;
+      }
+
+      // Quizzes live under the class/lesson path; only the class teacher writes.
+      match /lessons/{lessonId}/quizzes/{quizId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn()
+                    && get(/databases/$(database)/documents/classes/$(classId))
+                         .data.teacherId == request.auth.uid;
+      }
+    }
+
+    // ── Lessons (top-level) ───────────────────────────────────────────────
+    match /lessons/{lessonId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.teacherId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+                    && resource.data.teacherId == request.auth.uid;
+
+      // Quiz results: a student writes their own; signed-in teachers read.
+      match /quizResults/{studentId} {
+        allow read: if isSignedIn();
+        allow create, update: if isOwner(studentId);
+        allow delete: if false; // results are immutable from the client
+      }
+    }
+  }
+}

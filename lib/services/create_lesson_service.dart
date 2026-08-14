@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:englify_app/app/app.locator.dart';
 import 'package:englify_app/models/lesson_data_model.dart';
+import 'package:englify_app/services/analytics_service.dart';
 import 'package:englify_app/services/firestore_keys.dart';
 
 class CreateLessonService {
   final _lessons = FirebaseFirestore.instance.collection(FirestoreKeys.lessons);
+  AnalyticsService get _analytics => locator<AnalyticsService>();
 
   // ✅ Auto lesson number - count existing lessons for this class then +1
   Future<int> _getNextLessonNumber(String classid) async {
@@ -21,7 +24,14 @@ class CreateLessonService {
     String? imageurl,
     String? contenturl,
   }) async {
-    
+    // Validation before write — reject empty title / missing references.
+    if (classid.trim().isEmpty || teacherid.trim().isEmpty) {
+      throw Exception("Lesson is missing its class or teacher reference");
+    }
+    if (lessontitle.trim().isEmpty) {
+      throw Exception("Lesson title is required");
+    }
+
     final lessonNumber = await _getNextLessonNumber(classid);
 
     final Map<String, dynamic> lessondata = {
@@ -43,6 +53,9 @@ class CreateLessonService {
 
     final lessonref = await _lessons.add(lessondata);
     print("✅ Lesson #$lessonNumber created: ${lessonref.id}");
+
+    await _analytics.logLessonCreate(classId: classid);
+
     return lessonref.id;
   }
 
@@ -69,6 +82,30 @@ class CreateLessonService {
     } catch (e) {
       print("error fetching lessons $e");
       return [];
+    }
+  }
+
+  /// Loads one lesson by its document id.
+  ///
+  /// A favourite record only stores `lessonId` (plus a denormalised title,
+  /// class name and image), so the favourites flow uses this to rehydrate the
+  /// complete lesson — lessonNumber, description, contentUrl, teacherId —
+  /// instead of rebuilding a partial [LessonData] from the favourite itself.
+  ///
+  /// Returns null when the lesson no longer exists, so callers can tell a
+  /// deleted lesson apart from a load failure.
+  Future<LessonData?> getLessonById(String lessonId) async {
+    if (lessonId.trim().isEmpty) return null;
+    try {
+      final doc = await _lessons.doc(lessonId).get();
+      if (!doc.exists) return null;
+      return LessonData.fromFirestore(
+        doc.id,
+        doc.data() as Map<String, dynamic>,
+      );
+    } catch (e) {
+      print('❌ Error loading lesson $lessonId: $e');
+      return null;
     }
   }
 

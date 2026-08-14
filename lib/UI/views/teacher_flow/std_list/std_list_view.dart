@@ -62,18 +62,63 @@ class StudentsListView extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
+                          GestureDetector(
+                            onTap: model.togglesearch,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                model.issearching
+                                    ? Icons.close_rounded
+                                    : Icons.tune_rounded,
+                                color: const Color(0xFF2F6BFF),
+                                size: 20,
+                              ),
                             ),
-                            child: const Icon(Icons.tune_rounded,
-                                color: Color(0xFF2F6BFF), size: 20),
                           ),
                         ],
                       ),
                     ),
+
+                    // Name filter — revealed by the tune button above
+                    if (model.issearching)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                            16, 0, 16, isLandscape ? 6 : 10),
+                        child: TextField(
+                          controller: model.searchcontroller,
+                          onChanged: model.onsearchchanged,
+                          autofocus: true,
+                          style: const TextStyle(
+                              color: Colors.black87, fontSize: 15),
+                          decoration: InputDecoration(
+                            hintText: 'Search students by name',
+                            hintStyle: TextStyle(
+                                color: Colors.grey[600], fontSize: 14),
+                            prefixIcon: const Icon(Icons.search,
+                                color: Colors.grey, size: 20),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.95),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            // BorderSide.none opts a field out of the themed
+                            // focus ring entirely, so it is set explicitly here.
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF2F6BFF), width: 1.6),
+                            ),
+                          ),
+                        ),
+                      ),
 
                     // List
                     Expanded(
@@ -82,9 +127,12 @@ class StudentsListView extends StatelessWidget {
                               child: CircularProgressIndicator(
                                   color: Colors.white))
                           : model.students.isEmpty
-                              ? const Center(
-                                  child: Text('No students yet.',
-                                      style: TextStyle(
+                              ? Center(
+                                  child: Text(
+                                      model.hasnomatches
+                                          ? 'No students match that name.'
+                                          : 'No students yet.',
+                                      style: const TextStyle(
                                           color: Colors.white70,
                                           fontSize: 15)),
                                 )

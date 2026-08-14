@@ -38,7 +38,7 @@ dependencies:
   stacked_services: ^1.6.0
   stacked_generator: ^2.0.0
   shared_preferences: ^2.5.4
-  font_awesome_flutter: ^10.12.0
+  font_awesome_flutter: ^11.0.0
   sqflite: ^2.4.2
   path: ^1.9.1
   firebase_core: ^4.4.0
@@ -59,6 +59,9 @@ dependencies:
   flutter_email_sender: ^8.0.0
   firebase_messaging: ^16.0.0
   flutter_local_notifications: ^19.0.0
+  firebase_crashlytics: ^5.2.3
+  firebase_analytics: ^12.4.2
+  firebase_app_check: ^0.4.4+2
 
 dev_dependencies:
   flutter_test:
@@ -71,6 +74,31 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   build_runner: ^2.7.1
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.8.0
+
+# Android launcher icon generation.
+#
+# Sources under assets/launcher_icon/ are produced from
+# assets/images/App_Icon.png by `dart run tool/generate_launcher_icon_sources.dart`,
+# which insets the wide QUIZNITY wordmark so Android's adaptive-icon mask
+# cannot clip it. Regenerate those sources first if the artwork changes, then:
+#
+#   dart run flutter_launcher_icons
+#
+# `android: "ic_launcher"` keeps the existing resource name, so the
+# `@mipmap/ic_launcher` reference in AndroidManifest.xml stays valid.
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/launcher_icon/ic_launcher_source.png"
+  adaptive_icon_background: "#0F091D"
+  adaptive_icon_foreground: "assets/launcher_icon/ic_launcher_foreground.png"
+  # The foreground source is already inset to Android's 66% safe zone by the
+  # generator script, so the package must not inset it a second time (its
+  # default of 16% would shrink the wordmark to ~45% of the icon).
+  adaptive_icon_foreground_inset: 0
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

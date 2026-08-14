@@ -5,6 +5,7 @@ import 'package:englify_app/UI/views/Role_selection/role_selection.dart';
 import 'package:englify_app/UI/views/auth/auth_view.dart';
 
 import 'package:englify_app/UI/views/classroomcode/classroom_view.dart';
+import 'package:englify_app/UI/views/email_verification/email_verification_view.dart';
 import 'package:englify_app/UI/views/forgatepassword/forpass_view.dart';
 import 'package:englify_app/UI/views/login/login_view.dart';
 import 'package:englify_app/UI/views/onbording/onbording_view.dart';
@@ -38,6 +39,7 @@ import 'package:englify_app/UI/views/teacher_flow/teacher_tracker/teacher_tracke
 import 'package:englify_app/UI/views/teacher_flow/teacher_tracker/student_quiz_record_view.dart';
 import 'package:englify_app/UI/views/teacher_flow/teacher_tracker/quiz_attempt_detail_view.dart';
 import 'package:englify_app/UI/views/terms&condition/terms&cond_view.dart';
+import 'package:englify_app/services/analytics_service.dart';
 import 'package:englify_app/services/auth_service.dart';
 import 'package:englify_app/services/cloudniry_service.dart';
 import 'package:englify_app/services/create_lesson_service.dart';
@@ -64,6 +66,7 @@ import 'package:stacked_services/stacked_services.dart';
     MaterialRoute(page: AuthView),
     MaterialRoute(page: Signupemailview),
     MaterialRoute(page: LoginView),
+    MaterialRoute(page: EmailVerificationView),
     MaterialRoute(page: SignupPasswordView),
     MaterialRoute(page: PersonalizationView),
     MaterialRoute(page: TeacherHomeView),
@@ -118,6 +121,7 @@ import 'package:stacked_services/stacked_services.dart';
     LazySingleton(classType: DashboardService),
     LazySingleton(classType: NotificationService),
     LazySingleton(classType: TrackerService),
+    LazySingleton(classType: AnalyticsService),
   ],
 )
 class App {}

@@ -102,7 +102,7 @@ class LoginView extends StatelessWidget {
       width: double.infinity,
       height: context.rs(52),
       child: ElevatedButton(
-        onPressed: model.isBusy ? null : model.onlogin,
+        onPressed: model.isBusy ? null : () => model.onlogin(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2F6BFF),
           elevation: 0,

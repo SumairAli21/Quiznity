@@ -41,7 +41,7 @@ class TeacherDashboardView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildTopBar(model, isLandscape),
+                            _buildTopBar(context, model, isLandscape),
                             SizedBox(height: isLandscape ? 12 : 20),
                             _buildStatsGrid(context, model, isLandscape),
                             SizedBox(height: isLandscape ? 12 : 20),
@@ -81,7 +81,7 @@ class TeacherDashboardView extends StatelessWidget {
   }
 
   Widget _buildTopBar(
-      TeacherDashboadViewmodel model, bool isLandscape) {
+      BuildContext context, TeacherDashboadViewmodel model, bool isLandscape) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -116,16 +116,19 @@ class TeacherDashboardView extends StatelessWidget {
             ),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.calendar_today_rounded,
-            color: Color(0xFF2F6BFF),
-            size: 22,
+        GestureDetector(
+          onTap: () => model.onCalendarTap(context),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.calendar_today_rounded,
+              color: Color(0xFF2F6BFF),
+              size: 22,
+            ),
           ),
         ),
       ],
@@ -282,11 +285,15 @@ class TeacherDashboardView extends StatelessWidget {
         Text(label,
             style:
                 const TextStyle(color: Colors.white70, fontSize: 13)),
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700)),
+        Flexible(
+          child: Text(value,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700)),
+        ),
       ],
     );
   }
@@ -313,53 +320,71 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+    final isTappable = onTap != null;
+
+    final card = Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            showBadge
+                ? _buildBadgeIcon()
+                : Icon(icon, color: iconColor, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // The chevron is what tells these two cards apart from the inert
+            // ones — without it they are pixel-identical and users tap the
+            // dead ones expecting to navigate.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (isTappable) ...[
+                  const SizedBox(width: 2),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 16, color: Colors.grey[500]),
+                ],
+              ],
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              showBadge
-                  ? _buildBadgeIcon()
-                  : Icon(icon, color: iconColor, size: 32),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
+
+    // No handler → no tap target at all, so an inert card cannot swallow a
+    // press and pretend to be a button.
+    if (!isTappable) return card;
+
+    return GestureDetector(onTap: onTap, child: card);
   }
 
   Widget _buildBadgeIcon() {

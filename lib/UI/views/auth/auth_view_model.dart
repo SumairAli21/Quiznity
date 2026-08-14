@@ -3,6 +3,7 @@ import 'package:englify_app/app/app.router.dart';
 import 'package:englify_app/services/auth_service.dart';
 import 'package:englify_app/services/local_storage_service.dart';
 import 'package:englify_app/services/user_service.dart';
+import 'package:englify_app/utils/student_routing.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
@@ -55,7 +56,7 @@ class AuthViewModel extends BaseViewModel {
       if (existingRole != null) {
         // ✅ Existing user - already has role in Firestore
         print("✅ Existing user found - Role: $existingRole");
-        await _handleExistingUser(existingRole);
+        await _handleExistingUser(user.uid, existingRole);
       } else {
         // ✅ New user - get role from LOCAL STORAGE and save to Firestore
         print("🆕 New user - checking local storage for pre-selected role");
@@ -133,7 +134,7 @@ class AuthViewModel extends BaseViewModel {
 
       if (existingRole != null) {
         print("✅ Existing user found - Role: $existingRole");
-        await _handleExistingUser(existingRole);
+        await _handleExistingUser(user.uid, existingRole);
       } else {
         print("🆕 New user - checking local storage for pre-selected role");
         
@@ -181,7 +182,7 @@ class AuthViewModel extends BaseViewModel {
   }
 
   // ✅ Helper - Handle existing user navigation
-  Future<void> _handleExistingUser(String role) async {
+  Future<void> _handleExistingUser(String uid, String role) async {
     try {
       await _localstorageservice.islogintrue();
       await _localstorageservice.saveuserrole(role);
@@ -190,8 +191,9 @@ class AuthViewModel extends BaseViewModel {
       notifyListeners();
 
       if (role == "student") {
-        print("➡️ Navigating to Personalization (Student)");
-        _navigationservice.replaceWithPersonalizationView();
+        // Returning student — personalization is one-time, so let the shared
+        // router decide. See lib/utils/student_routing.dart.
+        await routeSignedInStudent(uid);
       } else if (role == "teacher") {
         print("➡️ Navigating to Teacher Home");
         _navigationservice.replaceWithTeacherBottomTabView();
@@ -207,4 +209,5 @@ class AuthViewModel extends BaseViewModel {
       notifyListeners();
     }
   }
+
 }

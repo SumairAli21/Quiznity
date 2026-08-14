@@ -2,4 +2,5 @@
 <resources>
     <!-- Accent color applied to the notification icon + title. -->
     <color name="notification_color">#2F6BFF</color>
+	<color name="ic_launcher_background">#0F091D</color>
 </resources>

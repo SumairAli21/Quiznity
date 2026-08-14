@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────
+// RECOMMENDED Firebase Storage rules for Englify — REVIEW BEFORE DEPLOYING.
+//
+// NOT wired into firebase.json; NOT deployed automatically. To deploy:
+//   1. add a "storage": { "rules": "storage.rules" } block to firebase.json
+//   2. run `firebase deploy --only storage`
+//
+// Note: most media (lesson content, profile pics, lesson images) is stored in
+// Cloudinary, not Firebase Storage. The app only uses Storage for classroom
+// images under `classroom_images/`. These rules lock the bucket down to
+// authenticated users with a type/size guard, and deny everything else.
+// ─────────────────────────────────────────────────────────────────────────
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImageUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*');
+    }
+
+    // Classroom images uploaded by the app.
+    match /classroom_images/{imageId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isImageUnder5MB();
+    }
+
+    // Deny everything not explicitly allowed above.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -214,6 +214,8 @@ void initState() {
                   child: Text(
                     widget.lessonTitle.toUpperCase(),
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: context.rf(15),
                       fontWeight: FontWeight.w600,

@@ -6,6 +6,7 @@ import 'package:englify_app/models/classdata_model.dart';
 import 'package:englify_app/services/auth_service.dart';
 import 'package:englify_app/services/local_storage_service.dart';
 import 'package:englify_app/services/classroom_service.dart';
+import 'package:englify_app/services/profile_service.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:stacked/stacked.dart';
@@ -16,6 +17,7 @@ class StudentHomeViewModel extends BaseViewModel {
   final _localstorage = locator<LocalStorageService>();
   final _classroomservice = locator<classroomservice>();
   final _authsercive = locator<AuthService>();
+  final _profileservice = locator<ProfileService>();
 
   final serachcontroller = TextEditingController();
 
@@ -31,8 +33,17 @@ class StudentHomeViewModel extends BaseViewModel {
   }
 
   Future<void> _loadname() async {
-    final name = await _localstorage.getusername();
-    username = name ?? "Student";
+    // Firestore is the source of truth for the name — it is stored per-uid.
+    // Local storage is only a cache, so it is the fallback, never the lead.
+    final profile = await _profileservice.getProfile();
+    final firestorename = (profile?['name'] as String?)?.trim();
+
+    if (firestorename != null && firestorename.isNotEmpty) {
+      username = firestorename;
+      await _localstorage.saveusername(firestorename);
+    } else {
+      username = await _localstorage.getusername() ?? "Student";
+    }
     notifyListeners();
   }
 

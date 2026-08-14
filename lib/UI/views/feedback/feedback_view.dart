@@ -102,7 +102,7 @@ class FeedbackView extends StatelessWidget {
                                   ),
                                   SizedBox(height: context.rs(4)),
                                   Text(
-                                    'Your feedback helps us improve Englify!',
+                                    'Your feedback helps us improve Quiznity!',
                                     style: TextStyle(
                                       fontSize: context.rf(13),
                                       color: Colors.grey[600],

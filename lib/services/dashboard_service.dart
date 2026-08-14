@@ -22,12 +22,25 @@ class DashboardService {
   // Path: lessons/{lessonId}/quizResults
   // Written by fixed PointsService
   // ─────────────────────────────────────────────
-  Future<List<QueryDocumentSnapshot>> _getQuizResults(String lessonId) async {
-    final snap = await _db
+  Future<List<QueryDocumentSnapshot>> _getQuizResults(String lessonId,
+      {DateTime? date}) async {
+    Query query = _db
         .collection(FirestoreKeys.lessons)
         .doc(lessonId)
-        .collection('quizResults')
-        .get();
+        .collection('quizResults');
+
+    // When a date is supplied, keep only results attempted on that calendar
+    // day. `attemptedAt` is written as a server timestamp by PointsService.
+    if (date != null) {
+      final start = DateTime(date.year, date.month, date.day);
+      final end = start.add(const Duration(days: 1));
+      query = query
+          .where('attemptedAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+          .where('attemptedAt', isLessThan: Timestamp.fromDate(end));
+    }
+
+    final snap = await query.get();
     return snap.docs;
   }
 
@@ -105,7 +118,7 @@ class DashboardService {
   // ─────────────────────────────────────────────
   // 3. Average Score
   // ─────────────────────────────────────────────
-  Future<double> getAverageScore(String teacherId) async {
+  Future<double> getAverageScore(String teacherId, {DateTime? date}) async {
     final classes = await _db
         .collection('classes')
         .where('teacherId', isEqualTo: teacherId)
@@ -117,7 +130,7 @@ class DashboardService {
     for (final cls in classes.docs) {
       final lessons = await _getLessons(cls.id);
       for (final lesson in lessons) {
-        final results = await _getQuizResults(lesson.id);
+        final results = await _getQuizResults(lesson.id, date: date);
         print(
             '📊 class "${cls.data()['name']}" lesson ${lesson.id}: ${results.length} results');
         for (final r in results) {
@@ -137,7 +150,8 @@ class DashboardService {
   // ─────────────────────────────────────────────
   // 4. Average Attendance
   // ─────────────────────────────────────────────
-  Future<double> getAverageAttendance(String teacherId) async {
+  Future<double> getAverageAttendance(String teacherId,
+      {DateTime? date}) async {
     final classes = await _db
         .collection('classes')
         .where('teacherId', isEqualTo: teacherId)
@@ -157,7 +171,7 @@ class DashboardService {
 
       final lessons = await _getLessons(cls.id);
       for (final lesson in lessons) {
-        final results = await _getQuizResults(lesson.id);
+        final results = await _getQuizResults(lesson.id, date: date);
         for (final r in results) attempted.add(r.id); // doc id = studentId
       }
     }
@@ -173,7 +187,8 @@ class DashboardService {
   // ─────────────────────────────────────────────
   // 5. Top Performing Class
   // ─────────────────────────────────────────────
-  Future<TopClassInfo?> getTopPerformingClass(String teacherId) async {
+  Future<TopClassInfo?> getTopPerformingClass(String teacherId,
+      {DateTime? date}) async {
     final classes = await _db
         .collection('classes')
         .where('teacherId', isEqualTo: teacherId)
@@ -188,7 +203,7 @@ class DashboardService {
       int possible = 0;
 
       for (final lesson in lessons) {
-        final results = await _getQuizResults(lesson.id);
+        final results = await _getQuizResults(lesson.id, date: date);
         for (final r in results) {
           final d = r.data() as Map<String, dynamic>;
           earned += (d['score'] as num?)?.toInt() ?? 0;

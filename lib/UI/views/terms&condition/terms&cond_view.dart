@@ -32,14 +32,14 @@ class TermsandcondView extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.grey.withOpacity(0.1),
-                      Colors.grey.withOpacity(0.1),
+                      Colors.black.withOpacity(0.25),
+                      Colors.black.withOpacity(0.25),
                     ],
                   ),
                 ),
               ),
               SafeArea(
-                child: Padding(padding: EdgeInsets.symmetric(horizontal: context.rs(12),vertical: context.rs(8)),
+                child: Padding(padding: EdgeInsets.symmetric(horizontal: context.hPad,vertical: context.rs(8)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,

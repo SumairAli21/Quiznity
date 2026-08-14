@@ -42,7 +42,8 @@ class StudentDashboardView extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildTopBar(isLandscape, isTablet, isSmall),
+                            _buildTopBar(context, model, isLandscape,
+                                isTablet, isSmall),
                             SizedBox(height: isLandscape ? 12 : 20),
                             _buildStatsGrid(
                                 model, isLandscape, isTablet),
@@ -84,8 +85,9 @@ class StudentDashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildTopBar(
+  Widget _buildTopBar(BuildContext context, StudentDashboardViewmodel model,
       bool isLandscape, bool isTablet, bool isSmall) {
+    final picked = model.selectedDate;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -111,25 +113,52 @@ class StudentDashboardView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 2),
-            Text(
-              'Learn and grow daily.',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.80),
-                fontSize: isTablet ? 14.0 : isSmall ? 11.0 : 13.0,
-              ),
-            ),
+            // Surfaces the active day filter — otherwise the shrunken stats
+            // look like a bug rather than a filtered view.
+            picked == null
+                ? Text(
+                    'Learn and grow daily.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.80),
+                      fontSize: isTablet ? 14.0 : isSmall ? 11.0 : 13.0,
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: model.clearDateFilter,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${picked.day}/${picked.month}/${picked.year}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.90),
+                            fontSize:
+                                isTablet ? 14.0 : isSmall ? 11.0 : 13.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(Icons.close_rounded,
+                            color: Colors.white.withOpacity(0.90),
+                            size: isTablet ? 16 : 14),
+                      ],
+                    ),
+                  ),
           ],
         ),
-        Container(
-          padding: EdgeInsets.all(isTablet ? 12 : 10),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.calendar_today_rounded,
-            color: const Color(0xFF2F6BFF),
-            size: isTablet ? 24 : 22,
+        GestureDetector(
+          onTap: () => model.onCalendarTap(context),
+          child: Container(
+            padding: EdgeInsets.all(isTablet ? 12 : 10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.calendar_today_rounded,
+              color: const Color(0xFF2F6BFF),
+              size: isTablet ? 24 : 22,
+            ),
           ),
         ),
       ],

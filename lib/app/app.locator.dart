@@ -10,6 +10,7 @@
 import 'package:stacked_services/src/navigation/navigation_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 
+import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/classroom_service.dart';
 import '../services/cloudniry_service.dart';
@@ -55,4 +56,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => DashboardService());
   locator.registerLazySingleton(() => NotificationService());
   locator.registerLazySingleton(() => TrackerService());
+  locator.registerLazySingleton(() => AnalyticsService());
 }

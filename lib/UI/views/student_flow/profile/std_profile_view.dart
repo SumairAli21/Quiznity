@@ -23,7 +23,7 @@ class StdProfileView extends StatelessWidget {
                 ),
               ),
               Positioned.fill(
-                child: Container(color: Colors.black.withOpacity(0.15)),
+                child: Container(color: Colors.black.withOpacity(0.25)),
               ),
 
               SafeArea(
@@ -49,21 +49,6 @@ class StdProfileView extends StatelessWidget {
                                     fontSize: context.rf(24),
                                     fontWeight: FontWeight.w800,
                                     fontFamily: 'heading',
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: model.onSettings,
-                                  child: Container(
-                                    padding: EdgeInsets.all(context.rs(8)),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.settings_outlined,
-                                      color: const Color(0xFF2F6BFF),
-                                      size: context.rs(22),
-                                    ),
                                   ),
                                 ),
                               ],
@@ -183,46 +168,53 @@ class StdProfileView extends StatelessWidget {
                                                 ),
                                               ),
                                               GestureDetector(
-                                                onTap: () =>
-                                                    _showLocationDialog(
-                                                      context,
-                                                      model,
-                                                    ),
+                                                onTap: () => _showEmailDialog(
+                                                  context,
+                                                  model,
+                                                ),
                                                 child: Row(
                                                   children: [
                                                     Icon(
-                                                      Icons
-                                                          .location_on_outlined,
+                                                      Icons.email_outlined,
                                                       size: context.rs(13),
                                                       color: Colors.grey[500],
                                                     ),
                                                     SizedBox(
-                                                        width: context.rs(2)),
+                                                        width: context.rs(3)),
                                                     Flexible(
                                                       child: Text(
-                                                        model.location.isEmpty
-                                                            ? 'Add location'
-                                                            : model.location,
+                                                        model.email.isEmpty
+                                                            ? 'Add email'
+                                                            : model.email,
                                                         overflow: TextOverflow
                                                             .ellipsis,
                                                         style: TextStyle(
                                                           fontSize:
                                                               context.rf(13),
                                                           color:
-                                                              model
-                                                                  .location
-                                                                  .isEmpty
-                                                              ? Colors.blue
-                                                              : Colors
-                                                                  .grey[600],
+                                                              Colors.grey[600],
                                                         ),
                                                       ),
                                                     ),
-                                                    if (model.location.isEmpty)
+                                                    SizedBox(
+                                                        width: context.rs(3)),
+                                                    if (model.isUpdatingEmail)
+                                                      SizedBox(
+                                                        width: context.rs(12),
+                                                        height: context.rs(12),
+                                                        child:
+                                                            const CircularProgressIndicator(
+                                                          strokeWidth: 1.5,
+                                                          color:
+                                                              Color(0xFF2F6BFF),
+                                                        ),
+                                                      )
+                                                    else
                                                       Icon(
                                                         Icons.edit,
                                                         size: context.rs(12),
-                                                        color: Colors.blue,
+                                                        color: const Color(
+                                                            0xFF2F6BFF),
                                                       ),
                                                   ],
                                                 ),
@@ -325,17 +317,6 @@ class StdProfileView extends StatelessWidget {
                                     ),
                                     child: Column(
                                       children: [
-                                        // Sound
-                                        _buildToggleItem(
-                                          context: context,
-                                          icon: Icons.volume_up_outlined,
-                                          iconColor: Colors.blue,
-                                          label: 'Sound',
-                                          value: model.isSoundEnabled,
-                                          onChanged: (_) => model.toggleSound(),
-                                        ),
-                                        _divider(),
-
                                         // Notification
                                         _buildToggleItem(
                                           context: context,
@@ -422,6 +403,25 @@ class StdProfileView extends StatelessWidget {
                                       labelColor: Colors.red,
                                       onTap: () =>
                                           _showLogoutDialog(context, model),
+                                    ),
+                                  ),
+                                  SizedBox(height: context.rs(16)),
+
+                                  // ── Delete account button
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.92),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: _buildNavItem(
+                                      context: context,
+                                      icon: Icons.delete_forever,
+                                      iconColor: Colors.red,
+                                      label: 'Delete Account',
+                                      labelColor: Colors.red,
+                                      onTap: () =>
+                                          _showDeleteAccountDialog(
+                                              context, model),
                                     ),
                                   ),
                                   SizedBox(height: context.rs(30)),
@@ -555,14 +555,15 @@ class StdProfileView extends StatelessWidget {
     child: Divider(height: 1, color: Colors.grey[200]),
   );
 
-  void _showLocationDialog(BuildContext context, ProfileViewmodel model) {
-    final controller = TextEditingController(text: model.location);
+  // ── Email update flow
+  void _showEmailDialog(BuildContext context, ProfileViewmodel model) {
+    final controller = TextEditingController(text: model.email);
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Location'),
+        title: const Text('Update Email'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -570,8 +571,9 @@ class StdProfileView extends StatelessWidget {
               TextField(
                 cursorColor: Colors.black,
                 controller: controller,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: 'e.g. Karachi, Pakistan',
+                  hintText: 'Enter new email',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
                 ),
@@ -593,9 +595,72 @@ class StdProfileView extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.of(context).pop();
-              model.updateLocation(controller.text.trim());
+              _runEmailUpdate(context, model, controller.text.trim());
             },
             child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _runEmailUpdate(
+      BuildContext context, ProfileViewmodel model, String newEmail,
+      {String? password}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await model.updateEmail(newEmail, password: password);
+    if (result == null) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(
+          'Verification link sent to $newEmail. '
+          'Please verify it to finish updating your email.',
+        ),
+      ));
+    } else if (result == 'requires-recent-login') {
+      _showReauthForEmail(context, model, newEmail);
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(result)));
+    }
+  }
+
+  void _showReauthForEmail(
+      BuildContext context, ProfileViewmodel model, String newEmail) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Password'),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: controller,
+            obscureText: true,
+            cursorColor: Colors.black,
+            decoration: InputDecoration(
+              hintText: 'Enter your password',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2F6BFF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _runEmailUpdate(context, model, newEmail,
+                  password: controller.text);
+            },
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -636,5 +701,98 @@ class StdProfileView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // ── Delete Account flow
+  void _showDeleteAccountDialog(BuildContext context, ProfileViewmodel model) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Account',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const SingleChildScrollView(
+          child: Text(
+            'This permanently deletes your account and your data. '
+            'This action cannot be undone. Continue?',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (model.isPasswordAccount) {
+                _showReauthPasswordDialog(context, model);
+              } else {
+                _runDelete(context, model);
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReauthPasswordDialog(
+      BuildContext context, ProfileViewmodel model) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Password'),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: controller,
+            obscureText: true,
+            cursorColor: Colors.black,
+            decoration: InputDecoration(
+              hintText: 'Enter your password',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _runDelete(context, model, password: controller.text);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _runDelete(BuildContext context, ProfileViewmodel model,
+      {String? password}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await model.deleteAccount(password: password);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 }

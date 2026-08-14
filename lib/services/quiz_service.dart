@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:englify_app/app/app.locator.dart';
 import 'package:englify_app/models/quiz_model.dart';
+import 'package:englify_app/services/analytics_service.dart';
 
 class QuizService {
   final _firestore = FirebaseFirestore.instance;
+  AnalyticsService get _analytics => locator<AnalyticsService>();
 
   // ✅ CHECK EXISTING QUIZ
   Future<bool> hasQuizForLesson({
@@ -32,6 +35,14 @@ class QuizService {
       throw Exception("Quiz already exists");
     }
 
+    // Validation before write — a quiz must have at least one question.
+    if (quiz.classId.trim().isEmpty || quiz.lessonId.trim().isEmpty) {
+      throw Exception("Quiz is missing its class or lesson reference");
+    }
+    if (quiz.questions.isEmpty) {
+      throw Exception("A quiz must have at least one question");
+    }
+
     await _firestore
         .collection('classes')
         .doc(quiz.classId)
@@ -39,6 +50,8 @@ class QuizService {
         .doc(quiz.lessonId)
         .collection('quizzes')
         .add(quiz.toMap());
+
+    await _analytics.logQuizCreate(lessonId: quiz.lessonId);
   }
 
   // ✅ GET QUIZ (Student)

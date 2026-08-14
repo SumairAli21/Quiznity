@@ -28,6 +28,15 @@ extension Responsive on BuildContext {
   double get keyboardInset => MediaQuery.viewInsetsOf(this).bottom;
   bool get isKeyboardOpen => keyboardInset > 0;
 
+  /// Height of the Android/iOS system navigation area at the bottom
+  /// (gesture pill or 3-button bar). 0 on devices without one.
+  ///
+  /// Use this to keep bottom-anchored content that sits OUTSIDE a `SafeArea`
+  /// — e.g. a `Positioned` FAB in a full-bleed `Stack` — clear of the OS
+  /// navigation controls. Content already inside a `SafeArea` does not need
+  /// it (the SafeArea has already reserved this inset).
+  double get bottomSafeInset => MediaQuery.viewPaddingOf(this).bottom;
+
   // ── Device classes ─────────────────────────────────────────────────────
 
   /// Tablet or larger. Based on the shortest side, so a phone held in

@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:englify_app/app/app.locator.dart';
 import 'package:englify_app/app/app.router.dart';
 import 'package:englify_app/services/firestore_keys.dart';
+import 'package:englify_app/services/local_storage_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -51,8 +52,12 @@ class NotificationService {
   /// Must match `default_notification_channel_id` in AndroidManifest.xml and
   /// the `channelId` used by the Cloud Functions.
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+    // Channel ID is a backend identifier — it must keep matching
+    // AndroidManifest.xml and the Cloud Functions, so it is deliberately NOT
+    // rebranded. Only the channel name below is shown to users (Android
+    // Settings > Apps > Notifications).
     'englify_high_importance',
-    'Englify Notifications',
+    'Quiznity Notifications',
     description: 'Lesson, quiz and quiz-result notifications',
     importance: Importance.high,
   );
@@ -100,8 +105,13 @@ class NotificationService {
       // Keep the token in sync with the signed-in user. authStateChanges()
       // emits the current state immediately, so this also covers cold start
       // and login/signup without extra wiring.
-      _auth.authStateChanges().listen((user) {
-        if (user != null) syncTokenForUser(user.uid);
+      //
+      // Gated on the user's preference — without this check, a user who turned
+      // notifications off would have their token silently re-registered on the
+      // next app launch and start receiving pushes again.
+      _auth.authStateChanges().listen((user) async {
+        if (user == null) return;
+        if (await isEnabled()) syncTokenForUser(user.uid);
       });
     } catch (e) {
       debugPrint('❌ [FCM] init failed: $e');
@@ -152,6 +162,28 @@ class NotificationService {
 
   /// Reads the device token and writes it to
   /// `users/{uid}/fcmTokens/{tokenHash}`. Safe to call repeatedly.
+  // ─────────────────────── Enable / disable (profile toggle) ───────────────
+
+  /// Whether the user wants push notifications on this device.
+  Future<bool> isEnabled() =>
+      locator<LocalStorageService>().getnotificationsenabled();
+
+  /// Turns push on or off for real, not just in the UI.
+  ///
+  /// Off deletes this device's token so the backend has nothing to push to; on
+  /// registers a fresh one. The preference is persisted either way so the
+  /// choice survives a restart.
+  Future<void> setEnabled(bool enabled) async {
+    await locator<LocalStorageService>().savenotificationsenabled(enabled);
+
+    final uid = _auth.currentUser?.uid;
+    if (enabled) {
+      if (uid != null) await syncTokenForUser(uid);
+    } else {
+      await clearTokenForCurrentUser();
+    }
+  }
+
   Future<void> syncTokenForUser(String uid) async {
     try {
       final token = await _messaging.getToken();
